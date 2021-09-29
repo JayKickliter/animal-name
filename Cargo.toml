@@ -1,9 +1,16 @@
+cargo-features = ["strip"]
+
 [package]
 name = "animal-name"
 version = "0.1.0"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
 
 [dependencies]
 angry-purple-tiger = "*"
