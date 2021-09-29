@@ -1,0 +1,74 @@
+[config]
+additional_profiles = ["klkgw", "ramips_24kec", "smartharvest", "dragino", "mtcdt", "raspi01", "raspi234", "resiot", "cotx", "raspi_64"]
+default_to_workspace = false
+
+[env.raspi01]
+CROSS_TARGET = "arm-unknown-linux-gnueabihf"
+
+[env.raspi234]
+CROSS_TARGET = "armv7-unknown-linux-gnueabihf"
+
+[env.raspi_64]
+CROSS_TARGET = "aarch64-unknown-linux-gnu"
+
+[env.x86_64]
+CROSS_TARGET = "x86_64-unknown-linux-gnu"
+
+[env.klkgw]
+CROSS_TARGET = "armv7-unknown-linux-musleabihf"
+
+[env.ramips_24kec]
+CROSS_TARGET = "mipsel-unknown-linux-musl"
+
+[env.smartharvest]
+CROSS_TARGET = "mipsel-unknown-linux-musl"
+
+[env.dragino]
+CROSS_TARGET = "mips-unknown-linux-musl"
+
+[env.mtcdt]
+CROSS_TARGET = "armv5te-unknown-linux-musleabi"
+
+[env.resiot]
+CROSS_TARGET = "armv7-unknown-linux-gnueabihf"
+
+[env.cotx]
+CROSS_TARGET = "aarch64-unknown-linux-gnu"
+
+[tasks.cross]
+description = "Runs the cross rust compiler."
+category = "Build"
+install_crate = false
+condition = { env_set = ["CROSS_TARGET"] }
+command = "cross"
+args = [
+  "build",
+  "--target",
+  "${CROSS_TARGET}",
+  "--release"
+]
+
+[tasks.tarball]
+description = "Zips release binary"
+category = "Package"
+dependencies = ["cross"]
+env.TARBALL_NAME = "animal-name-v${CARGO_MAKE_CRATE_VERSION}-${CARGO_MAKE_PROFILE}.tar.gz"
+condition = { env_set = ["CROSS_TARGET"] }
+script = '''
+	mkdir -p target/${CROSS_TARGET}/animal-name
+        mkdir -p target/tarball
+        cp LICENSE README.md target/${CROSS_TARGET}/animal-name
+	cp target/${CROSS_TARGET}/release/animal-name target/${CROSS_TARGET}/animal-name/
+	tar -C target/${CROSS_TARGET}/ -czvf target/tarball/${TARBALL_NAME} animal-name
+'''
+
+[tasks.ci]
+dependencies = ["check-format", "check-clippy"]
+
+[tasks.check-format]
+command = "cargo"
+args = ["fmt", "--", "--check"]
+
+[tasks.check-clippy]
+command = "cargo"
+args = ["clippy", "--", "--deny=clippy::all"]

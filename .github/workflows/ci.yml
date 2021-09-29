@@ -1,0 +1,88 @@
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+name: ci
+
+jobs:
+  build:
+    name: hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+          override: true
+          components: clippy, rustfmt
+
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.5.0
+        with:
+          access_token: ${{ github.token }}
+
+      - name: Check formatting
+        run: cargo fmt  -- --check
+
+      - name: Clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -Dclippy::all
+
+  package:
+    name: package
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - klkgw
+          - ramips_24kec
+          - smartharvest
+          - dragino
+          - mtcdt
+          - raspi01
+          - raspi234
+          - resiot
+          - x86_64
+          - cotx
+          - raspi_64
+    steps:
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+          components: rustfmt
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/checkout@v2
+
+      - name: install cross
+        uses: jaxxstorm/action-install-gh-release@release/v1-alpha
+        env:
+          ## Allow cross install into PATH
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo: rust-embedded/cross
+
+      - name: build tarball
+        run: cargo make --profile ${{ matrix.target }} tarball
+
+      - name: name release
+        if: startsWith(github.ref, 'refs/tags')
+        id: vars
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+
+      - name: create release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: Release ${{ steps.vars.outputs.tag }}
+          files: target/tarball/animal-name-${{ steps.vars.outputs.tag }}-${{ matrix.target }}.tar.gz
