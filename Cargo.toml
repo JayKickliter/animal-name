@@ -16,3 +16,4 @@ strip = "symbols"
 angry-purple-tiger = "*"
 ecc608-linux = "*"
 helium-crypto = { git = "https://github.com/helium/helium-crypto-rs", tag="v0.2.1" }
+libc = "*"

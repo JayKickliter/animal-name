@@ -18,6 +18,9 @@ fn main() {
 }
 
 fn go() -> Result<String, Box<dyn std::error::Error>> {
+    if !running_as_root() {
+        return Err("must be root".into());
+    }
     let pk = if let Ok(pk) = read_pk_from_ecc_chip() {
         pk
     } else {
@@ -25,6 +28,12 @@ fn go() -> Result<String, Box<dyn std::error::Error>> {
     };
     let pk_string = pk.to_string();
     Ok(pk_string.parse::<AnimalName>()?.to_string())
+}
+
+#[cfg(unix)]
+fn running_as_root() -> bool {
+    let euid = unsafe { libc::geteuid() };
+    euid == 0
 }
 
 fn read_pk_from_ecc_chip() -> Result<PublicKey, Box<dyn Error>> {

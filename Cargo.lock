@@ -18,6 +18,7 @@ dependencies = [
  "angry-purple-tiger",
  "ecc608-linux",
  "helium-crypto",
+ "libc",
 ]
 
 [[package]]
