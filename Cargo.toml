@@ -2,7 +2,7 @@ cargo-features = ["strip"]
 
 [package]
 name = "animal-name"
-version = "0.3.1-alpha.0"
+version = "0.4.0"
 edition = "2018"
 
 [profile.release]

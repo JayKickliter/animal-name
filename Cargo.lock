@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "animal-name"
-version = "0.3.1-alpha.0"
+version = "0.4.0"
 dependencies = [
  "angry-purple-tiger",
  "ecc608-linux",
