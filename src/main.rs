@@ -5,11 +5,11 @@
 use angry_purple_tiger::AnimalName;
 use ecc608_linux::{Ecc, KeyType};
 use helium_crypto::{ecc_compact, Keypair, PublicKey};
-use std::{convert::TryFrom, error::Error, fs};
+use std::{convert::TryFrom, env, error::Error, fs};
 
 fn main() {
     match go() {
-        Ok(name) => print!("{}", name),
+        Ok(output) => println!("{}", output),
         Err(e) => {
             eprintln!("{}", e);
             std::process::exit(1)
@@ -18,6 +18,10 @@ fn main() {
 }
 
 fn go() -> Result<String, Box<dyn std::error::Error>> {
+    // This check is only necessary because we are dealing with dyn
+    // Error and can't check if reading the ECC chip failed because we
+    // don't have permission or because of any other reason (e.g. the
+    // I2C bus doesn't have an ecc).
     if !running_as_root() {
         return Err("must be root".into());
     }
@@ -27,7 +31,17 @@ fn go() -> Result<String, Box<dyn std::error::Error>> {
         read_pk_from_swarmkey_file()?
     };
     let pk_string = pk.to_string();
-    Ok(pk_string.parse::<AnimalName>()?.to_string())
+    let animal_name = pk_string.parse::<AnimalName>()?.to_string();
+    Ok(
+        if env::args().into_iter().any(|arg| arg == "--print-keys") {
+            format!(
+                r#"{{pubkey,"{}"}}. {{onboarding_key,"{}"}}. {{animal_name,"{}"}}."#,
+                pk_string, pk_string, animal_name
+            )
+        } else {
+            animal_name
+        },
+    )
 }
 
 #[cfg(unix)]
