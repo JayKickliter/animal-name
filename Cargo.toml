@@ -1,6 +1,6 @@
 [package]
 name = "animal-name"
-version = "0.4.1-alpha.0"
+version = "0.4.1"
 edition = "2018"
 
 [profile.release]
