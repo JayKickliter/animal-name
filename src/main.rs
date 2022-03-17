@@ -53,15 +53,18 @@ fn running_as_root() -> bool {
 fn read_pk_from_ecc_chip() -> Result<PublicKey, Box<dyn Error>> {
     const ECC_I2C_PATH: &str = "/dev/i2c-1";
     const ECC_I2C_ADDR: u16 = 0x60;
-    const KEY_SLOT: u8 = 0;
-
     let mut ecc = Ecc::from_path(ECC_I2C_PATH, ECC_I2C_ADDR)?;
-    // Start with the "decompressed" sec1 tag since the ecc does not include it.
-    let mut key_bytes = vec![4u8];
-    // Add the keybytes from the slot.
-    key_bytes.extend_from_slice(ecc.genkey(KeyType::Public, KEY_SLOT)?.as_ref());
-    let public_key = PublicKey::from(ecc_compact::PublicKey::try_from(key_bytes.as_ref())?);
-    Ok(public_key)
+    for ecc_key_slot in 0..15 {
+        if let Ok(key_bytes) = ecc.genkey(KeyType::Public, ecc_key_slot).as_ref() {
+            // Start with the "decompressed" sec1 tag since the ecc does not include it.
+            let mut tagged_key_bytes = vec![4u8];
+            tagged_key_bytes.extend_from_slice(key_bytes);
+            if let Ok(compact_key) = ecc_compact::PublicKey::try_from(tagged_key_bytes.as_ref()) {
+                return Ok(PublicKey::from(compact_key));
+            }
+        }
+    }
+    Err("No compact key in any ECC slot".into())
 }
 
 fn read_pk_from_swarmkey_file() -> Result<PublicKey, Box<dyn Error>> {
